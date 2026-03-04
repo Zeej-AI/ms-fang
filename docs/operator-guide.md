@@ -2,6 +2,7 @@
 
 ## Core Commands
 - `msfang init [--yes] [--force]`
+- `msfang serve [--host 127.0.0.1] [--port 9387]`
 - `msfang preflight <ticket_id> --criteria ...`
 - `msfang plan <ticket_id>`
 - `msfang execute <ticket_id> --notes "..."`
@@ -43,3 +44,8 @@
 - `config/openfang_profiles.yaml` defines subagent profiles.
 - Built-in presets: `codex_cli`, `claude_cli`, `critic_fast`.
 - `msfang delegate ... --profile <name>` picks profile-specific agent/instructions.
+
+## HTTP API Service
+- `msfang serve` (or `./scripts/msfangd`) starts local API service for GUI integration.
+- API base defaults to `http://127.0.0.1:9387`.
+- This service exposes onboarding, doctor, ticket lifecycle, delegation, approval, and event feed endpoints under `/v1/*`.

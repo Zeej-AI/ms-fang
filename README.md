@@ -32,6 +32,23 @@ cd /path/to/MsFang
 
 `./scripts/msfang` auto-creates `.venv` and runs MsFang from source, so no global pip install is required.
 
+## Run As Local API Service (`msfangd`)
+```bash
+cd /path/to/MsFang
+./scripts/msfangd --host 127.0.0.1 --port 9387
+```
+
+Key endpoints:
+- `GET /v1/doctor`
+- `POST /v1/init`
+- `GET /v1/tickets`
+- `POST /v1/tickets`
+- `POST /v1/tickets/<id>/preflight|plan|delegate|critic|janitor|undo`
+- `POST /v1/tickets/<id>/approval/request|accept`
+- `GET /v1/tickets/<id>/events`
+
+Mission Control can proxy this API through `/api/msfang/*` with `MSFANG_API_BASE=http://127.0.0.1:9387`.
+
 ## Directory Layout
 - `src/msfang/` - control-plane modules
 - `config/` - policy/identity/runtime/delegation/profile contracts

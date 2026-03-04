@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT_PATH" ]; do
+  LINK_TARGET="$(readlink "$SCRIPT_PATH")"
+  if [[ "$LINK_TARGET" = /* ]]; then
+    SCRIPT_PATH="$LINK_TARGET"
+  else
+    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+    SCRIPT_PATH="$SCRIPT_DIR/$LINK_TARGET"
+  fi
+done
+
+ROOT="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+VENV="$ROOT/.venv"
+
+if [ ! -x "$VENV/bin/python" ]; then
+  python3 -m venv "$VENV"
+fi
+
+exec env PYTHONPATH="$ROOT/src" "$VENV/bin/python" -m msfang.http_api --root "$ROOT" "$@"

@@ -11,6 +11,7 @@ from .adapters.jcodemunch_adapter import JCodeMunchAdapter
 from .adapters.openfang_adapter import OpenFangAdapter, OpenFangAdapterConfig
 from .code_intel import CodeIntelService
 from .delegation import DelegationEngine
+from .http_api import run_server
 from .models import OwnerIdentities
 from .onboarding import InitOptions, run_init
 from .policy import PolicyEngine
@@ -116,6 +117,10 @@ def main() -> None:
     p_hermes.add_argument("--channel", choices=["slack", "cli"], default="cli")
 
     p_doc = sub.add_parser("doctor")
+
+    p_serve = sub.add_parser("serve")
+    p_serve.add_argument("--host", default="127.0.0.1")
+    p_serve.add_argument("--port", type=int, default=9387)
 
     p_ci_index = sub.add_parser("code-index")
     p_ci_index.add_argument("--path", required=True)
@@ -244,6 +249,10 @@ def main() -> None:
 
     if args.cmd == "doctor":
         _print_json(run_phase0_checks(root))
+        return
+
+    if args.cmd == "serve":
+        run_server(root=root, host=args.host, port=args.port)
         return
 
     # Code intelligence commands are policy-enforced and jcodemunch-first.
