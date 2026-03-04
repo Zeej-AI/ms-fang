@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from enum import StrEnum
+try:
+    from enum import StrEnum
+except ImportError:  # pragma: no cover - Python < 3.11 fallback
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        """Compatibility shim for Python 3.9/3.10."""
 from typing import Any
 
 

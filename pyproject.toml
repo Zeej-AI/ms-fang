@@ -7,7 +7,7 @@ name = "msfang"
 version = "0.1.0"
 description = "MsFang control-plane for deterministic agent orchestration"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 authors = [{ name = "MsFang" }]
 license = { text = "MIT" }
 dependencies = []

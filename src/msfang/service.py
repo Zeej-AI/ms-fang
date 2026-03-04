@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
+from .adapters.hermes_adapter import HermesCommand
 from .models import (
     Gate,
     OwnerIdentities,
@@ -96,15 +97,13 @@ class MsFangService:
     def request_approval(self, ticket_id: str, action_type: str, context: str, ttl_minutes: int = 120) -> TicketState:
         state = self.store.load_state(ticket_id)
         risk = self.policy.classify(action_type)
+        now = datetime.now(timezone.utc)
         approval = PendingApproval(
             id=str(uuid4()),
             action_type=action_type,
             risk=risk,
-            requested_at=utc_now_iso(),
-            expires_at=(
-                __import__("datetime").datetime.fromisoformat(utc_now_iso())
-                + timedelta(minutes=ttl_minutes)
-            ).isoformat(),
+            requested_at=now.isoformat(),
+            expires_at=(now + timedelta(minutes=ttl_minutes)).isoformat(),
             request_context=context,
         )
         state = self.machine.request_approval(state, approval)
@@ -150,3 +149,30 @@ class MsFangService:
 
     def show(self, ticket_id: str) -> TicketState:
         return self.store.load_state(ticket_id)
+
+    def handle_hermes_command(self, cmd: HermesCommand) -> TicketState:
+        """Apply a validated Hermes slash command to ticket state."""
+        if cmd.name == "preflight":
+            criteria = cmd.payload.get("criteria", [])
+            if isinstance(criteria, str):
+                criteria = [criteria]
+            return self.preflight(
+                cmd.ticket_id,
+                success_criteria=list(criteria),
+                owner=OwnerIdentities(
+                    slack_user_ids=[cmd.actor] if cmd.channel == "slack" else [],
+                    cli_os_users=[cmd.actor] if cmd.channel == "cli" else [],
+                ),
+            )
+        if cmd.name == "plan":
+            return self.plan(cmd.ticket_id)
+        if cmd.name == "execute":
+            return self.execute(cmd.ticket_id, loop_notes=cmd.payload.get("notes", ""))
+        if cmd.name == "accept":
+            return self.accept(cmd.ticket_id, approval_id=cmd.payload.get("approval_id", ""))
+        if cmd.name == "undo":
+            return self.undo(cmd.ticket_id)
+        if cmd.name == "prompt":
+            return self.set_prompt(cmd.ticket_id, prompt=cmd.payload.get("text", ""))
+
+        raise ValueError(f"Unsupported Hermes command: {cmd.name}")

@@ -10,6 +10,11 @@
 - `msfang janitor <ticket_id>`
 - `msfang undo <ticket_id>`
 - `msfang show <ticket_id>`
+- `msfang hermes-command <ticket_id> --text "/plan" --actor <id> --channel slack|cli`
+- `msfang doctor`
+- `msfang code-index --path <repo_path>`
+- `msfang code-search --repo <repo> --query "<query>"`
+- `msfang code-symbol --repo <repo> --symbol-id "<id>"`
 
 ## Recommended Lifecycle
 1. Preflight with clear success criteria.
@@ -19,3 +24,8 @@
 5. If Green, run Janitor and close.
 6. If Amber, suspend and await input.
 7. If Red, request approval/escalate.
+
+## Code Intel Policy
+- `config/policies.yaml` controls code intelligence provider selection.
+- Default is `code_intel_provider: "jcodemunch"`.
+- If `enforce_jcodemunch_for_code_ops: true`, all code-intel commands fail unless provider is `jcodemunch`.

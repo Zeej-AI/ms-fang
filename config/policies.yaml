@@ -11,5 +11,7 @@
   },
   "approval_required_for": ["red"],
   "strike_threshold_red": 3,
-  "max_history": 50
+  "max_history": 50,
+  "code_intel_provider": "jcodemunch",
+  "enforce_jcodemunch_for_code_ops": true
 }

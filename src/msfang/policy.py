@@ -14,6 +14,8 @@ class PolicyConfig:
     approval_required_for: set[str]
     strike_threshold_red: int
     max_history: int
+    code_intel_provider: str
+    enforce_jcodemunch_for_code_ops: bool
 
     @classmethod
     def defaults(cls) -> "PolicyConfig":
@@ -30,6 +32,8 @@ class PolicyConfig:
             approval_required_for={"red"},
             strike_threshold_red=3,
             max_history=50,
+            code_intel_provider="jcodemunch",
+            enforce_jcodemunch_for_code_ops=True,
         )
 
 
@@ -52,6 +56,10 @@ class PolicyEngine:
                 approval_required_for=set(data.get("approval_required_for", list(defaults.approval_required_for))),
                 strike_threshold_red=int(data.get("strike_threshold_red", defaults.strike_threshold_red)),
                 max_history=int(data.get("max_history", defaults.max_history)),
+                code_intel_provider=str(data.get("code_intel_provider", defaults.code_intel_provider)),
+                enforce_jcodemunch_for_code_ops=bool(
+                    data.get("enforce_jcodemunch_for_code_ops", defaults.enforce_jcodemunch_for_code_ops)
+                ),
             )
         )
 

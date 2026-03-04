@@ -6,16 +6,24 @@ import argparse
 import json
 from pathlib import Path
 
+from .adapters.hermes_adapter import HermesAdapter
+from .adapters.jcodemunch_adapter import JCodeMunchAdapter
+from .code_intel import CodeIntelService
 from .models import OwnerIdentities
 from .policy import PolicyEngine
+from .runtime import run_phase0_checks
 from .service import MsFangService
 from .storage import TicketStore
 
 
-def _build_service(root: Path) -> MsFangService:
+def _build_service(root: Path) -> tuple[MsFangService, PolicyEngine]:
     policy = PolicyEngine.from_file(root / "config" / "policies.yaml")
     store = TicketStore(root)
-    return MsFangService(store, policy)
+    return MsFangService(store, policy), policy
+
+
+def _print_json(payload: object) -> None:
+    print(json.dumps(payload, indent=2, sort_keys=True))
 
 
 def main() -> None:
@@ -66,8 +74,32 @@ def main() -> None:
     p_show = sub.add_parser("show")
     p_show.add_argument("ticket_id")
 
+    p_hermes = sub.add_parser("hermes-command")
+    p_hermes.add_argument("ticket_id")
+    p_hermes.add_argument("--text", required=True, help="slash command, e.g. '/execute run tests'")
+    p_hermes.add_argument("--actor", required=True)
+    p_hermes.add_argument("--channel", choices=["slack", "cli"], default="cli")
+
+    p_doc = sub.add_parser("doctor")
+
+    p_ci_index = sub.add_parser("code-index")
+    p_ci_index.add_argument("--path", required=True)
+    p_ci_index.add_argument("--use-ai-summaries", action="store_true")
+
+    p_ci_search = sub.add_parser("code-search")
+    p_ci_search.add_argument("--repo", required=True)
+    p_ci_search.add_argument("--query", required=True)
+    p_ci_search.add_argument("--max-results", type=int, default=10)
+
+    p_ci_symbol = sub.add_parser("code-symbol")
+    p_ci_symbol.add_argument("--repo", required=True)
+    p_ci_symbol.add_argument("--symbol-id", required=True)
+    p_ci_symbol.add_argument("--verify", action="store_true")
+    p_ci_symbol.add_argument("--context-lines", type=int, default=0)
+
     args = parser.parse_args()
-    svc = _build_service(args.root)
+    root = args.root
+    svc, policy = _build_service(root)
 
     if args.cmd == "preflight":
         out = svc.preflight(
@@ -75,11 +107,20 @@ def main() -> None:
             success_criteria=args.criteria,
             owner=OwnerIdentities(slack_user_ids=args.slack_id, cli_os_users=args.cli_user),
         )
-    elif args.cmd == "plan":
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "plan":
         out = svc.plan(args.ticket_id)
-    elif args.cmd == "execute":
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "execute":
         out = svc.execute(args.ticket_id, loop_notes=args.notes)
-    elif args.cmd == "critic":
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "critic":
         out = svc.critic(
             args.ticket_id,
             success=args.success,
@@ -87,20 +128,76 @@ def main() -> None:
             failed=args.failed,
             strikes_increment=args.strikes,
         )
-    elif args.cmd == "request-approval":
-        out = svc.request_approval(args.ticket_id, action_type=args.action, context=args.context)
-    elif args.cmd == "accept":
-        out = svc.accept(args.ticket_id, args.approval_id)
-    elif args.cmd == "undo":
-        out = svc.undo(args.ticket_id)
-    elif args.cmd == "prompt":
-        out = svc.set_prompt(args.ticket_id, args.text)
-    elif args.cmd == "janitor":
-        out = svc.janitor(args.ticket_id)
-    else:
-        out = svc.show(args.ticket_id)
+        _print_json(out.to_dict(include_history=True))
+        return
 
-    print(json.dumps(out.to_dict(include_history=True), indent=2, sort_keys=True))
+    if args.cmd == "request-approval":
+        out = svc.request_approval(args.ticket_id, action_type=args.action, context=args.context)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "accept":
+        out = svc.accept(args.ticket_id, args.approval_id)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "undo":
+        out = svc.undo(args.ticket_id)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "prompt":
+        out = svc.set_prompt(args.ticket_id, args.text)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "janitor":
+        out = svc.janitor(args.ticket_id)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "show":
+        out = svc.show(args.ticket_id)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "hermes-command":
+        adapter = HermesAdapter()
+        cmd = adapter.parse_text(
+            text=args.text,
+            ticket_id=args.ticket_id,
+            actor=args.actor,
+            channel=args.channel,
+        )
+        out = svc.handle_hermes_command(cmd)
+        _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "doctor":
+        _print_json(run_phase0_checks(root))
+        return
+
+    # Code intelligence commands are policy-enforced and jcodemunch-first.
+    code = CodeIntelService(policy=policy, adapter=JCodeMunchAdapter())
+
+    if args.cmd == "code-index":
+        _print_json(code.index_folder(path=args.path, use_ai_summaries=args.use_ai_summaries))
+        return
+
+    if args.cmd == "code-search":
+        _print_json(code.search_symbols(repo=args.repo, query=args.query, max_results=args.max_results))
+        return
+
+    if args.cmd == "code-symbol":
+        _print_json(
+            code.get_symbol(
+                repo=args.repo,
+                symbol_id=args.symbol_id,
+                verify=args.verify,
+                context_lines=args.context_lines,
+            )
+        )
+        return
 
 
 if __name__ == "__main__":

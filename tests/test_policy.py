@@ -11,15 +11,25 @@ class PolicyTests(unittest.TestCase):
             engine = PolicyEngine.from_file(Path(td) / "missing.yaml")
             self.assertTrue(engine.requires_approval("os_change"))
             self.assertFalse(engine.requires_approval("code_change"))
+            self.assertEqual(engine.config.code_intel_provider, "jcodemunch")
+            self.assertTrue(engine.config.enforce_jcodemunch_for_code_ops)
 
     def test_file_override(self):
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "policies.yaml"
-            p.write_text('{"action_risk_map":{"x":"red"},"approval_required_for":["red"],"strike_threshold_red":4,"max_history":10}', encoding="utf-8")
+            p.write_text(
+                (
+                    '{"action_risk_map":{"x":"red"},"approval_required_for":["red"],"strike_threshold_red":4,'
+                    '"max_history":10,"code_intel_provider":"jcodemunch","enforce_jcodemunch_for_code_ops":true}'
+                ),
+                encoding="utf-8",
+            )
             engine = PolicyEngine.from_file(p)
             self.assertEqual(engine.classify("x"), "red")
             self.assertEqual(engine.config.strike_threshold_red, 4)
             self.assertEqual(engine.config.max_history, 10)
+            self.assertEqual(engine.config.code_intel_provider, "jcodemunch")
+            self.assertTrue(engine.config.enforce_jcodemunch_for_code_ops)
 
 
 if __name__ == "__main__":

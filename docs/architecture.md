@@ -5,6 +5,7 @@
 - Hermes is executive interface + durable memory backend.
 - OpenFang is worker runtime.
 - jcodemunch is symbol retrieval layer.
+- Policy can enforce jcodemunch as the only code-intel provider.
 
 ## Canonical Task State
 Each ticket is isolated under `tickets/<ticket_id>/`:
@@ -28,3 +29,4 @@ Each ticket is isolated under `tickets/<ticket_id>/`:
 ## Policy
 Runtime policy is entirely in `config/policies.yaml`.
 Defaults keep red gating for os/package/service changes while minimizing prompts for routine work.
+Runtime and identity checks are surfaced through `msfang doctor`.

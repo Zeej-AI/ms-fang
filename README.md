@@ -9,6 +9,7 @@ MsFang is a thin control-plane for deterministic personal Agent OS orchestration
 - Policy-driven approvals (minimal prompts, hard red gates)
 - Upgrade intelligence scaffolding (scout + planner)
 - Slack/CLI-ready adapter contracts (implementation starts with CLI)
+- jcodemunch-first code intelligence with policy enforcement
 
 ## Quick Start
 ```bash
@@ -21,6 +22,13 @@ msfang --root . execute demo-1 --notes "Executed first loop"
 msfang --root . critic demo-1 --success
 msfang --root . janitor demo-1
 msfang --root . show demo-1
+
+# Runtime diagnostics
+msfang --root . doctor
+
+# jcodemunch-backed code intelligence
+msfang --root . code-index --path .
+msfang --root . code-search --repo local/control-plane-bootstrap --query "handle_hermes_command"
 ```
 
 ## Directory Layout
@@ -34,3 +42,4 @@ msfang --root . show demo-1
 - Reuse Hermes/OpenFang strengths, add minimal governance glue.
 - Keep decisions explicit and machine-checkable.
 - Make policy easy to edit without code changes.
+- Keep code intelligence deterministic and token-efficient via jcodemunch.
