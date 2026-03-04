@@ -1,0 +1,1 @@
+"""MsFang modular roles."""

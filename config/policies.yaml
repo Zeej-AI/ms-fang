@@ -1,0 +1,15 @@
+{
+  "action_risk_map": {
+    "os_change": "red",
+    "package_change": "red",
+    "service_change": "red",
+    "credential_change": "red",
+    "upgrade_apply": "amber",
+    "config_change": "amber",
+    "code_change": "green",
+    "test_run": "green"
+  },
+  "approval_required_for": ["red"],
+  "strike_threshold_red": 3,
+  "max_history": 50
+}

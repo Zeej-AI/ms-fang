@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msfang"
+version = "0.1.0"
+description = "MsFang control-plane for deterministic agent orchestration"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "MsFang" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+msfang = "msfang.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

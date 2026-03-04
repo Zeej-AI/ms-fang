@@ -1,0 +1,20 @@
+{
+  "locked_at": "2026-03-04T00:00:00Z",
+  "components": {
+    "hermes_agent": {
+      "repo": "https://github.com/Zeej-AI/hermes-agent",
+      "ref": "0ea6c343259a0925d6db25e1d11f7cc853da184b",
+      "adapter_contract": "v1"
+    },
+    "openfang": {
+      "repo": "https://github.com/Zeej-AI/openfang",
+      "ref": "1037ef768d2d4940ccd3447a7c63dce533a0e3f9",
+      "adapter_contract": "v1"
+    },
+    "jcodemunch_mcp": {
+      "repo": "https://github.com/Zeej-AI/jcodemunch-mcp",
+      "ref": "1802af0af2e1c45096b2ea5c8beeefa42c66a181",
+      "adapter_contract": "v1"
+    }
+  }
+}
