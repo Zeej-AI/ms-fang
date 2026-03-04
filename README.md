@@ -14,22 +14,21 @@ MsFang is a thin control-plane for deterministic personal Agent OS orchestration
 ## Quick Start
 ```bash
 cd /path/to/MsFang
-python3 -m pip install -e .
+./scripts/msfang doctor
 
-msfang --root . preflight demo-1 --criteria "state machine works" --cli-user "$USER"
-msfang --root . plan demo-1
-msfang --root . execute demo-1 --notes "Executed first loop"
-msfang --root . critic demo-1 --success
-msfang --root . janitor demo-1
-msfang --root . show demo-1
-
-# Runtime diagnostics
-msfang --root . doctor
+./scripts/msfang preflight demo-1 --criteria "state machine works" --cli-user "$USER"
+./scripts/msfang plan demo-1
+./scripts/msfang execute demo-1 --notes "Executed first loop"
+./scripts/msfang critic demo-1 --success
+./scripts/msfang janitor demo-1
+./scripts/msfang show demo-1
 
 # jcodemunch-backed code intelligence
-msfang --root . code-index --path .
-msfang --root . code-search --repo local/control-plane-bootstrap --query "handle_hermes_command"
+./scripts/msfang code-index --path .
+./scripts/msfang code-search --repo local/control-plane-bootstrap --query "handle_hermes_command"
 ```
+
+`./scripts/msfang` auto-creates `.venv` and runs MsFang from source, so no global pip install is required.
 
 ## Directory Layout
 - `src/msfang/` - control-plane modules
