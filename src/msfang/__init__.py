@@ -2,7 +2,9 @@
 
 __all__ = [
     "code_intel",
+    "delegation",
     "models",
+    "onboarding",
     "policy",
     "runtime",
     "service",

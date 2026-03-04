@@ -1,0 +1,17 @@
+{
+  "default_profile": "codex_cli",
+  "profiles": {
+    "codex_cli": {
+      "agent": "coder",
+      "instructions": "Use Codex-style disciplined execution. Produce concrete code edits and verification output."
+    },
+    "claude_cli": {
+      "agent": "researcher",
+      "instructions": "Use Claude-style synthesis for ambiguity reduction, then return concise actionable steps."
+    },
+    "critic_fast": {
+      "agent": "critic",
+      "instructions": "Validate quickly and report only material regressions or gate changes."
+    }
+  }
+}

@@ -1,9 +1,11 @@
 # Operator Guide (v1)
 
 ## Core Commands
+- `msfang init [--yes] [--force]`
 - `msfang preflight <ticket_id> --criteria ...`
 - `msfang plan <ticket_id>`
 - `msfang execute <ticket_id> --notes "..."`
+- `msfang delegate <ticket_id> --action-type <type> --task "..." [--profile codex_cli|claude_cli]`
 - `msfang critic <ticket_id> --success|--needs-input|--failed`
 - `msfang request-approval <ticket_id> --action <type> --context "..."`
 - `msfang accept <ticket_id> <approval_id>`
@@ -29,3 +31,15 @@
 - `config/policies.yaml` controls code intelligence provider selection.
 - Default is `code_intel_provider: "jcodemunch"`.
 - If `enforce_jcodemunch_for_code_ops: true`, all code-intel commands fail unless provider is `jcodemunch`.
+
+## Delegation Rails
+- `config/delegation.yaml` is the hard routing controller.
+- `enforce_routes: true` blocks manual executor overrides that violate configured routes.
+- `action_routes` decides where each action type runs (`openfang` or `hermes`).
+- `command_routes` can force `/execute` and `/delegate` to OpenFang.
+- Red-risk actions are blocked unless approval is accepted first.
+
+## OpenFang Profiles
+- `config/openfang_profiles.yaml` defines subagent profiles.
+- Built-in presets: `codex_cli`, `claude_cli`, `critic_fast`.
+- `msfang delegate ... --profile <name>` picks profile-specific agent/instructions.

@@ -7,6 +7,7 @@ MsFang is a thin control-plane for deterministic personal Agent OS orchestration
 - Traffic-light gating (`green`, `amber`, `red`)
 - Modular role contracts (Reflector, Critic, Janitor)
 - Policy-driven approvals (minimal prompts, hard red gates)
+- Hard delegation rails (Hermes vs OpenFang) via deterministic routing policy
 - Upgrade intelligence scaffolding (scout + planner)
 - Slack/CLI-ready adapter contracts (implementation starts with CLI)
 - jcodemunch-first code intelligence with policy enforcement
@@ -14,11 +15,12 @@ MsFang is a thin control-plane for deterministic personal Agent OS orchestration
 ## Quick Start
 ```bash
 cd /path/to/MsFang
+./scripts/msfang init --yes
 ./scripts/msfang doctor
 
 ./scripts/msfang preflight demo-1 --criteria "state machine works" --cli-user "$USER"
 ./scripts/msfang plan demo-1
-./scripts/msfang execute demo-1 --notes "Executed first loop"
+./scripts/msfang delegate demo-1 --action-type code_change --task "Implement feature X" --profile codex_cli
 ./scripts/msfang critic demo-1 --success
 ./scripts/msfang janitor demo-1
 ./scripts/msfang show demo-1
@@ -32,7 +34,7 @@ cd /path/to/MsFang
 
 ## Directory Layout
 - `src/msfang/` - control-plane modules
-- `config/` - policy/identity/runtime lock contracts
+- `config/` - policy/identity/runtime/delegation/profile contracts
 - `tickets/` - task state artifacts
 - `docs/` - architecture/operator/recovery docs
 - `scripts/phase0_check.sh` - environment readiness check

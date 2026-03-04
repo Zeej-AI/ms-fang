@@ -6,6 +6,7 @@
 - OpenFang is worker runtime.
 - jcodemunch is symbol retrieval layer.
 - Policy can enforce jcodemunch as the only code-intel provider.
+- Delegation policy can enforce deterministic executor selection.
 
 ## Canonical Task State
 Each ticket is isolated under `tickets/<ticket_id>/`:
@@ -30,3 +31,13 @@ Each ticket is isolated under `tickets/<ticket_id>/`:
 Runtime policy is entirely in `config/policies.yaml`.
 Defaults keep red gating for os/package/service changes while minimizing prompts for routine work.
 Runtime and identity checks are surfaced through `msfang doctor`.
+
+## Delegation
+- `config/delegation.yaml` is the mechanical delegation state for action/command routing.
+- `enforce_routes: true` means MsFang blocks conflicting manual routing requests.
+- Action-level routing is enforced before worker execution.
+- Red-risk actions must pass approval gate before delegation.
+
+## OpenFang Subagent Profiles
+- `config/openfang_profiles.yaml` stores profile-to-agent mappings and profile instructions.
+- MsFang executes profile-selected workers through OpenFang adapter (`delegate` command path).

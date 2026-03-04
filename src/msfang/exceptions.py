@@ -15,3 +15,7 @@ class ApprovalError(MsFangError):
 
 class TicketNotFoundError(MsFangError):
     """Raised when a ticket id cannot be resolved from storage."""
+
+
+class DelegationError(MsFangError):
+    """Raised when a task violates hard delegation routing policy."""

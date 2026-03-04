@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from uuid import uuid4
 
 from .adapters.hermes_adapter import HermesCommand
+from .adapters.openfang_adapter import OpenFangAdapter, WorkerResult
+from .delegation import DelegationEngine
+from .exceptions import ApprovalError
 from .models import (
     Gate,
     OwnerIdentities,
@@ -25,9 +29,20 @@ from .storage import TicketStore
 
 
 class MsFangService:
-    def __init__(self, store: TicketStore, policy: PolicyEngine):
+    def __init__(
+        self,
+        store: TicketStore,
+        policy: PolicyEngine,
+        *,
+        delegation: DelegationEngine | None = None,
+        openfang: OpenFangAdapter | None = None,
+        openfang_profiles_path: Path | None = None,
+    ):
         self.store = store
         self.policy = policy
+        self.delegation = delegation or DelegationEngine.from_file(store.root / "config" / "delegation.yaml")
+        self.openfang = openfang or OpenFangAdapter()
+        self.openfang_profiles_path = openfang_profiles_path or (store.root / "config" / "openfang_profiles.yaml")
         self.machine = TicketStateMachine(
             max_history=self.policy.config.max_history,
             strike_threshold_red=self.policy.config.strike_threshold_red,
@@ -71,6 +86,68 @@ class MsFangService:
         self.store.save_state(state)
         self.store.append_audit(ticket_id, f"{utc_now_iso()} execute")
         return state
+
+    def delegate_execute(
+        self,
+        ticket_id: str,
+        *,
+        action_type: str,
+        task: str,
+        context: str = "",
+        requested_executor: str | None = None,
+        profile: str | None = None,
+    ) -> tuple[TicketState, dict]:
+        if self.policy.requires_approval(action_type):
+            state = self.store.load_state(ticket_id)
+            if state.pending_approval is None:
+                raise ApprovalError(
+                    f"Action '{action_type}' requires approval before execution. "
+                    f"Run request-approval then accept."
+                )
+
+        executor = self.delegation.route_action(action_type, requested_executor=requested_executor)
+        chosen_profile = self.delegation.resolve_profile(profile)
+
+        worker: WorkerResult
+        if executor == "openfang":
+            worker = self.openfang.run_profile(
+                profile_name=chosen_profile,
+                task=task,
+                context=context,
+                profiles_path=self.openfang_profiles_path,
+            )
+        else:
+            worker = WorkerResult(
+                success=False,
+                output=(
+                    f"Hermes delegated action queued: action_type={action_type}. "
+                    "No direct Hermes runtime bridge is implemented yet."
+                ),
+                needs_input=True,
+                failed=False,
+            )
+
+        notes = (
+            f"Delegation executor={executor} action_type={action_type} profile={chosen_profile}\n\n"
+            f"Task:\n{task}\n\nResult:\n{worker.output}"
+        )
+        state = self.execute(ticket_id, notes)
+        self.store.append_audit(
+            ticket_id,
+            f"{utc_now_iso()} delegate executor={executor} action={action_type} profile={chosen_profile}",
+        )
+        result = {
+            "executor": executor,
+            "action_type": action_type,
+            "profile": chosen_profile,
+            "worker": {
+                "success": worker.success,
+                "needs_input": worker.needs_input,
+                "failed": worker.failed,
+                "output": worker.output,
+            },
+        }
+        return state, result
 
     def critic(
         self,
@@ -167,7 +244,24 @@ class MsFangService:
         if cmd.name == "plan":
             return self.plan(cmd.ticket_id)
         if cmd.name == "execute":
+            route = self.delegation.route_command("execute")
+            if route == "openfang":
+                state, _ = self.delegate_execute(
+                    cmd.ticket_id,
+                    action_type=cmd.payload.get("action_type", "code_change"),
+                    task=cmd.payload.get("notes", ""),
+                    requested_executor=route,
+                )
+                return state
             return self.execute(cmd.ticket_id, loop_notes=cmd.payload.get("notes", ""))
+        if cmd.name == "delegate":
+            state, _ = self.delegate_execute(
+                cmd.ticket_id,
+                action_type=cmd.payload.get("action_type", "code_change"),
+                task=cmd.payload.get("notes", ""),
+                requested_executor=self.delegation.route_command("delegate"),
+            )
+            return state
         if cmd.name == "accept":
             return self.accept(cmd.ticket_id, approval_id=cmd.payload.get("approval_id", ""))
         if cmd.name == "undo":

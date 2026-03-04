@@ -8,8 +8,11 @@ from pathlib import Path
 
 from .adapters.hermes_adapter import HermesAdapter
 from .adapters.jcodemunch_adapter import JCodeMunchAdapter
+from .adapters.openfang_adapter import OpenFangAdapter, OpenFangAdapterConfig
 from .code_intel import CodeIntelService
+from .delegation import DelegationEngine
 from .models import OwnerIdentities
+from .onboarding import InitOptions, run_init
 from .policy import PolicyEngine
 from .runtime import run_phase0_checks
 from .service import MsFangService
@@ -18,8 +21,23 @@ from .storage import TicketStore
 
 def _build_service(root: Path) -> tuple[MsFangService, PolicyEngine]:
     policy = PolicyEngine.from_file(root / "config" / "policies.yaml")
+    delegation = DelegationEngine.from_file(root / "config" / "delegation.yaml")
     store = TicketStore(root)
-    return MsFangService(store, policy), policy
+    openfang = OpenFangAdapter(
+        OpenFangAdapterConfig(
+            profiles_path=root / "config" / "openfang_profiles.yaml",
+        )
+    )
+    return (
+        MsFangService(
+            store,
+            policy,
+            delegation=delegation,
+            openfang=openfang,
+            openfang_profiles_path=root / "config" / "openfang_profiles.yaml",
+        ),
+        policy,
+    )
 
 
 def _print_json(payload: object) -> None:
@@ -31,6 +49,15 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="MsFang repository root")
 
     sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_init = sub.add_parser("init")
+    p_init.add_argument("--yes", action="store_true", help="Use defaults without prompts")
+    p_init.add_argument("--force", action="store_true", help="Overwrite config files")
+    p_init.add_argument("--owner-cli-user", default="")
+    p_init.add_argument("--owner-slack-id", default="")
+    p_init.add_argument("--channels", default="cli,slack")
+    p_init.add_argument("--default-executor", choices=["openfang", "hermes"], default="openfang")
+    p_init.add_argument("--default-profile", default="codex_cli")
 
     p_pre = sub.add_parser("preflight")
     p_pre.add_argument("ticket_id")
@@ -44,6 +71,14 @@ def main() -> None:
     p_exec = sub.add_parser("execute")
     p_exec.add_argument("ticket_id")
     p_exec.add_argument("--notes", required=True)
+
+    p_delegate = sub.add_parser("delegate")
+    p_delegate.add_argument("ticket_id")
+    p_delegate.add_argument("--action-type", default="code_change")
+    p_delegate.add_argument("--task", required=True)
+    p_delegate.add_argument("--context", default="")
+    p_delegate.add_argument("--profile", default="")
+    p_delegate.add_argument("--executor", choices=["auto", "openfang", "hermes"], default="auto")
 
     p_critic = sub.add_parser("critic")
     p_critic.add_argument("ticket_id")
@@ -99,6 +134,23 @@ def main() -> None:
 
     args = parser.parse_args()
     root = args.root
+
+    if args.cmd == "init":
+        payload = run_init(
+            root,
+            InitOptions(
+                yes=args.yes,
+                force=args.force,
+                owner_cli_user=args.owner_cli_user,
+                owner_slack_id=args.owner_slack_id,
+                channels_csv=args.channels,
+                default_executor=args.default_executor,
+                default_profile=args.default_profile,
+            ),
+        )
+        _print_json(payload)
+        return
+
     svc, policy = _build_service(root)
 
     if args.cmd == "preflight":
@@ -118,6 +170,23 @@ def main() -> None:
     if args.cmd == "execute":
         out = svc.execute(args.ticket_id, loop_notes=args.notes)
         _print_json(out.to_dict(include_history=True))
+        return
+
+    if args.cmd == "delegate":
+        state, result = svc.delegate_execute(
+            args.ticket_id,
+            action_type=args.action_type,
+            task=args.task,
+            context=args.context,
+            requested_executor=None if args.executor == "auto" else args.executor,
+            profile=args.profile or None,
+        )
+        _print_json(
+            {
+                "state": state.to_dict(include_history=True),
+                "delegation": result,
+            }
+        )
         return
 
     if args.cmd == "critic":

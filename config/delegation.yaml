@@ -1,0 +1,25 @@
+{
+  "enforce_routes": true,
+  "default_executor": "openfang",
+  "default_openfang_profile": "codex_cli",
+  "allowed_executors": ["hermes", "openfang"],
+  "action_routes": {
+    "code_change": "openfang",
+    "test_run": "openfang",
+    "upgrade_apply": "openfang",
+    "config_change": "hermes",
+    "os_change": "hermes",
+    "package_change": "hermes",
+    "service_change": "hermes",
+    "credential_change": "hermes"
+  },
+  "command_routes": {
+    "preflight": "hermes",
+    "plan": "hermes",
+    "execute": "openfang",
+    "delegate": "openfang",
+    "accept": "hermes",
+    "undo": "hermes",
+    "prompt": "hermes"
+  }
+}

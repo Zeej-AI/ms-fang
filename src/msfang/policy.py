@@ -24,6 +24,7 @@ class PolicyConfig:
                 "os_change": "red",
                 "package_change": "red",
                 "service_change": "red",
+                "credential_change": "red",
                 "config_change": "amber",
                 "code_change": "green",
                 "test_run": "green",

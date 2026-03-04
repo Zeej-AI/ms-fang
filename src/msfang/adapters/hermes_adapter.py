@@ -15,7 +15,7 @@ class HermesCommand:
 
 
 class HermesAdapter:
-    SUPPORTED_COMMANDS = {"preflight", "plan", "execute", "accept", "undo", "prompt"}
+    SUPPORTED_COMMANDS = {"preflight", "plan", "execute", "delegate", "accept", "undo", "prompt"}
 
     def validate(self, command: HermesCommand) -> None:
         if command.name not in self.SUPPORTED_COMMANDS:
@@ -31,8 +31,10 @@ class HermesAdapter:
         arg = parts[1].strip() if len(parts) > 1 else ""
 
         payload: dict[str, str] = {}
-        if name == "execute":
-            payload["notes"] = arg
+        if name in {"execute", "delegate"}:
+            action_type, notes = _parse_action_and_notes(arg)
+            payload["notes"] = notes
+            payload["action_type"] = action_type
         elif name == "accept":
             payload["approval_id"] = arg
         elif name == "prompt":
@@ -41,3 +43,14 @@ class HermesAdapter:
         cmd = HermesCommand(name=name, ticket_id=ticket_id, payload=payload, actor=actor, channel=channel)
         self.validate(cmd)
         return cmd
+
+
+def _parse_action_and_notes(raw: str) -> tuple[str, str]:
+    text = raw.strip()
+    if "::" in text:
+        left, right = text.split("::", 1)
+        action_type = left.strip().lower().replace(" ", "_")
+        notes = right.strip()
+        if action_type:
+            return action_type, notes
+    return "code_change", text

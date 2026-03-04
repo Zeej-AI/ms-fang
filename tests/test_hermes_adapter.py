@@ -20,6 +20,18 @@ class HermesAdapterTests(unittest.TestCase):
         )
         self.assertEqual(cmd.name, "execute")
         self.assertEqual(cmd.payload["notes"], "run tests for current ticket")
+        self.assertEqual(cmd.payload["action_type"], "code_change")
+
+    def test_parse_execute_with_explicit_action(self):
+        adapter = HermesAdapter()
+        cmd = adapter.parse_text(
+            text="/execute test_run :: run unit tests",
+            ticket_id="t1",
+            actor="claw",
+            channel="cli",
+        )
+        self.assertEqual(cmd.payload["action_type"], "test_run")
+        self.assertEqual(cmd.payload["notes"], "run unit tests")
 
     def test_service_routes_hermes_commands(self):
         with tempfile.TemporaryDirectory() as td:
